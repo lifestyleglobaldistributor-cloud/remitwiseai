@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RemitWise AI - Smart OFW Remittance</title>
+    <meta name="description" content="AI-powered remittance comparison and financial planning for OFW families">
+    <meta name="theme-color" content="#1e40af">
+    <link rel="manifest" href="#" id="manifest-placeholder">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 1rem; }
+        .container { max-width: 428px; margin: 0 auto; background: white; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .header { background: linear-gradient(135deg, #1e40af, #7c3aed); color: white; padding: 2rem 1.5rem; text-align: center; }
+        .header h1 { font-size: 1.75rem; font-weight: 800; margin-bottom: 0.5rem; }
+        .header p { opacity: 0.9; font-size: 0.9rem; }
+        .tabs { display: flex; background: #f3f4f6; border-bottom: 2px solid #e5e7eb; }
+        .tab { flex: 1; padding: 1rem; text-align: center; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.3s; }
+        .tab.active { background: white; color: #7c3aed; border-bottom: 3px solid #7c3aed; }
+        .content { padding: 1.5rem; max-height: 70vh; overflow-y: auto; }
+        .evolution-card { background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; border-left: 4px solid #f59e0b; }
+        .evolution-card h3 { font-size: 0.95rem; font-weight: 700; color: #92400e; margin-bottom: 0.5rem; }
+        .evolution-card p { font-size: 0.85rem; color: #78350f; line-height: 1.5; }
+        .agent-box { background: #eff6ff; border: 2px solid #3b82f6; border-radius: 12px; padding: 1rem; margin: 0.75rem 0; }
+        .agent-box h4 { color: #1e40af; font-size: 0.9rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; }
+        .demo-output { background: #f9fafb; border-radius: 8px; padding: 1rem; font-family: monospace; font-size: 0.8rem; margin: 0.75rem 0; border-left: 3px solid #10b981; }
+        .action-btn { background: linear-gradient(135deg, #7c3aed, #1e40af); color: white; border: none; padding: 0.875rem 1.5rem; border-radius: 12px; font-weight: 700; width: 100%; margin: 0.5rem 0; cursor: pointer; font-size: 0.95rem; transition: transform 0.2s; }
+        .action-btn:active { transform: scale(0.98); }
+        .share-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin: 1rem 0; }
+        .share-btn { background: white; border: 2px solid #e5e7eb; padding: 0.75rem; border-radius: 12px; text-align: center; cursor: pointer; transition: all 0.2s; }
+        .share-btn:hover { border-color: #7c3aed; transform: translateY(-2px); }
+        .share-btn svg { width: 24px; height: 24px; margin: 0 auto; }
+        .install-prompt { background: #10b981; color: white; padding: 1rem 1.5rem; text-align: center; font-weight: 600; cursor: pointer; display: none; }
+        .badge { display: inline-block; background: #10b981; color: white; padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.7rem; font-weight: 700; margin-left: 0.5rem; }
+        .rate-card { background: white; border: 2px solid #e5e7eb; border-radius: 12px; padding: 1rem; margin: 0.75rem 0; }
+        .rate-card.best { border-color: #10b981; background: #f0fdf4; }
+        .rate-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+        .rate-header h4 { font-size: 1rem; font-weight: 700; }
+        .rate-value { font-size: 1.5rem; font-weight: 800; color: #7c3aed; }
+        .feature-btn { background: #f3f4f6; border: 2px solid #e5e7eb; padding: 0.625rem 1rem; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; margin: 0.25rem; display: inline-block; transition: all 0.2s; }
+        .feature-btn:hover { background: #e5e7eb; border-color: #7c3aed; }
+        .mini-chart { background: #f9fafb; border-radius: 8px; padding: 1rem; margin: 1rem 0; height: 120px; position: relative; overflow: hidden; }
+        .chart-line { position: absolute; bottom: 20px; left: 0; right: 0; height: 60px; }
+        .tx-item { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 0.75rem; margin: 0.5rem 0; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; }
+        .tx-status { padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: 700; }
+        .tx-status.completed { background: #dcfce7; color: #059669; }
+        .tx-status.pending { background: #fef3c7; color: #d97706; }
+    </style>
+</head>
+<body>
+    <div class="install-prompt" id="installPrompt" onclick="installPWA()">
+        📱 Add RemitWise to Home Screen
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>💰 RemitWise AI</h1>
+            <p>Smart Remittance for OFW Families</p>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="showTab('evolution')">Evolution</div>
+            <div class="tab" onclick="showTab('agent')">AI Agent</div>
+            <div class="tab" onclick="showTab('demo')">Live Demo</div>
+        </div>
+
+        <div class="content" id="content">
+            <!-- Evolution Tab -->
+            <div id="evolution" class="tab-content">
+                <div class="evolution-card">
+                    <h3>🔢 Phase 1: Predictive Forex Model (Old)</h3>
+                    <p>Traditional ML model predicting PHP/USD rates based on historical data. Limited to numbers, no explanations.</p>
+                </div>
+
+                <div class="evolution-card">
+                    <h3>🤖 Phase 2: GenAI Explanation (Current)</h3>
+                    <p><strong>Taglish explanation:</strong> "Mas maganda mag-send ngayon kasi tumaas ang peso. Based sa BSP data, predicted na tataas pa by 0.5% this week. Send ka na!"</p>
+                </div>
+
+                <div class="evolution-card" style="background: linear-gradient(135deg, #dcfce7, #bbf7d0); border-left-color: #10b981;">
+                    <h3>🚀 Phase 3: Agentic Mode <span class="badge">NEW</span></h3>
+                    <p><strong>Full automation:</strong> AI agent automatically books best rate, files BIR tax docs, invests excess in GSave, and notifies family via Viber/Messenger.</p>
+                </div>
+
+                <button class="action-btn" onclick="showTab('agent')">View Agent Architecture →</button>
+            </div>
+
+            <!-- Agent Tab -->
+            <div id="agent" class="tab-content" style="display:none;">
+                <h3 style="font-size: 1.1rem; margin-bottom: 1rem; color: #1f2937;">🏗️ Agent Anatomy</h3>
+                
+                <div class="agent-box">
+                    <h4>🧠 RAG System</h4>
+                    <p style="font-size: 0.85rem; color: #4b5563;">
+                        <strong>Knowledge Base:</strong><br>
+                        • Bangko Sentral ng Pilipinas API (real-time rates)<br>
+                        • RemitHub, Wise, Western Union APIs<br>
+                        • BIR tax guidelines (vector DB)<br>
+                        • Maya/GCash GSave investment rules
+                    </p>
+                </div>
+
+                <div class="agent-box">
+                    <h4>⚙️ Agent Tools</h4>
+                    <p style="font-size: 0.85rem; color: #4b5563;">
+                        <strong>1. compare_rates()</strong> - Fetches live rates from all providers<br>
+                        <strong>2. book_transfer()</strong> - Executes transaction at best rate<br>
+                        <strong>3. file_bir_tax()</strong> - Auto-generates BIR Form 1701<br>
+                        <strong>4. invest_excess()</strong> - Parks extra funds in GSave<br>
+                        <strong>5. notify_family()</strong> - Sends Viber/Messenger update
+                    </p>
+                </div>
+
+                <div class="agent-box">
+                    <h4>🔄 Workflow</h4>
+                    <p style="font-size: 0.85rem; color: #4b5563;">
+                        User: "Padala ko 500 USD"<br>
+                        → Agent retrieves rates via RAG<br>
+                        → Explains in Taglish<br>
+                        → Auto-books if authorized<br>
+                        → Files taxes + invests<br>
+                        → Notifies: "Nakuha na ni Nanay! 💚"
+                    </p>
+                </div>
+
+                <button class="action-btn" onclick="showTab('demo')">Try Live Demo →</button>
+            </div>
+
+            <!-- Demo Tab -->
+            <div id="demo" class="tab-content" style="display:none;">
+                <h3 style="font-size: 1.1rem; margin-bottom: 1rem; color: #1f2937;">💸 Live Comparison</h3>
+                
+                <div class="rate-card best">
+                    <div class="rate-header">
+                        <h4>Wise</h4>
+                        <span style="background: #10b981; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">BEST</span>
+                    </div>
+                    <div class="rate-value">₱56.85</div>
+                    <p style="font-size: 0.8rem; color: #059669; font-weight: 600; margin-top: 0.5rem;">You get ₱28,425 for $500</p>
+                </div>
+
+                <div class="rate-card">
+                    <div class="rate-header">
+                        <h4>Western Union</h4>
+                    </div>
+                    <div class="rate-value" style="color: #6b7280;">₱56.20</div>
+                    <p style="font-size: 0.8rem; color: #6b7280; margin-top: 0.5rem;">You get ₱28,100</p>
+                </div>
+
+                <div class="rate-card">
+                    <div class="rate-header">
+                        <h4>RemitHub</h4>
+                    </div>
+                    <div class="rate-value" style="color: #6b7280;">₱56.50</div>
+                    <p style="font-size: 0.8rem; color: #6b7280; margin-top: 0.5rem;">You get ₱28,250</p>
+                </div>
+
+                <div class="demo-output">
+                    <strong>🤖 AI Recommendation (Taglish):</strong><br><br>
+                    "Oy bes! Mag-Wise ka ngayon! ₱325 more ka kikita vs Western Union. Tapos invest ko na yung extra ₱325 sa GCash GSave mo, 2.5% interest pa yan. BIR form na-file ko na rin automatically. Sabi ni Nanay thank you daw! 💚"
+                </div>
+
+                <button class="action-btn" onclick="runAgent()">🚀 Run Agentic Mode</button>
+                <div id="agentResult"></div>
+
+                <!-- Transaction History -->
+                <div style="margin: 1.5rem 0;">
+                    <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+                        📜 Recent Transactions
+                        <span style="font-size: 0.75rem; color: #6b7280; font-weight: 500;">(Demo Data)</span>
+                    </h4>
+                    <div id="txHistory"></div>
+                </div>
+
+                <!-- Calculator -->
+                <div style="margin: 1.5rem 0;">
+                    <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                        🧮 Quick Calculator
+                        <span class="badge" style="background: #10b981;">LIVE</span>
+                    </h4>
+                    
+                    <!-- Currency Selector -->
+                    <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+                        <select id="currencyFrom" style="flex: 1; padding: 0.625rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 0.9rem; font-weight: 600;">
+                            <option value="USD">🇺🇸 USD</option>
+                            <option value="EUR">🇪🇺 EUR</option>
+                            <option value="GBP">🇬🇧 GBP</option>
+                            <option value="SGD">🇸🇬 SGD</option>
+                            <option value="AUD">🇦🇺 AUD</option>
+                        </select>
+                        <span style="padding: 0.625rem; font-weight: 700; color: #7c3aed;">→</span>
+                        <select id="currencyTo" style="flex: 1; padding: 0.625rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 0.9rem; font-weight: 600;">
+                            <option value="PHP">🇵🇭 PHP</option>
+                        </select>
+                    </div>
+                    
+                    <input type="number" id="calcAmount" placeholder="Enter amount" style="width: 100%; padding: 0.875rem; border: 2px solid #7c3aed; border-radius: 12px; font-size: 1.1rem; margin-bottom: 0.75rem; font-weight: 600;" value="500">
+                    
+                    <!-- Quick Amount Buttons -->
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-bottom: 0.75rem;">
+                        <button class="feature-btn" style="margin: 0;" onclick="setAmount(100)">100</button>
+                        <button class="feature-btn" style="margin: 0;" onclick="setAmount(500)">500</button>
+                        <button class="feature-btn" style="margin: 0;" onclick="setAmount(1000)">1K</button>
+                        <button class="feature-btn" style="margin: 0;" onclick="setAmount(5000)">5K</button>
+                    </div>
+                    
+                    <div id="calcResult" style="background: linear-gradient(135deg, #f0fdf4, #dcfce7); padding: 1.25rem; border-radius: 12px; border: 2px solid #10b981; color: #059669;"></div>
+                    
+                    <!-- Fee Breakdown Toggle -->
+                    <button class="feature-btn" style="width: 100%; margin-top: 0.75rem;" onclick="toggleFees()">📋 Show Fee Breakdown</button>
+                    <div id="feeBreakdown" style="display: none; margin-top: 0.75rem; padding: 1rem; background: #fef3c7; border-radius: 8px; font-size: 0.85rem;"></div>
+                    
+                    <!-- Action Buttons -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.75rem;">
+                        <button class="feature-btn" style="margin: 0;" onclick="swapCurrency()">🔄 Swap</button>
+                        <button class="feature-btn" style="margin: 0;" onclick="copyResult()">📋 Copy</button>
+                    </div>
+                </div>
+
+                <h3 style="font-size: 1.1rem; margin: 1.5rem 0 1rem; color: #1f2937;">📤 Share RemitWise</h3>
+                <div class="share-grid">
+                    <div class="share-btn" onclick="share('facebook')">
+                        <svg fill="#1877f2" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                        <div style="font-size: 0.7rem; margin-top: 0.25rem; font-weight: 600;">Facebook</div>
+                    </div>
+                    <div class="share-btn" onclick="share('twitter')">
+                        <svg fill="#1da1f2" viewBox="0 0 24 24"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/></svg>
+                        <div style="font-size: 0.7rem; margin-top: 0.25rem; font-weight: 600;">Twitter</div>
+                    </div>
+                    <div class="share-btn" onclick="share('whatsapp')">
+                        <svg fill="#25d366" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+                        <div style="font-size: 0.7rem; margin-top: 0.25rem; font-weight: 600;">WhatsApp</div>
+                    </div>
+                    <div class="share-btn" onclick="share('viber')">
+                        <svg fill="#7360f2" viewBox="0 0 24 24"><path d="M11.398.002C9.473.028 5.331.344 2.993 2.683.656 5.02.349 9.155.323 11.08c-.026 1.926-.054 5.74 3.069 6.781v3.255a.789.789 0 001.346.555l3.855-3.867c4.119 1.045 7.286-.595 7.639-.795a11.474 11.474 0 003.287-2.788c1.964-2.474 2.952-5.814 2.952-10.022 0-4.207-1.039-7.583-3.069-10.022C17.076 1.094 13.919.028 11.398.002z"/></svg>
+                        <div style="font-size: 0.7rem; margin-top: 0.25rem; font-weight: 600;">Viber</div>
+                    </div>
+                </div>
+
+                <!-- Extra Features -->
+                <h3 style="font-size: 1.1rem; margin: 1.5rem 0 1rem; color: #1f2937;">⚡ Extra Features</h3>
+                <div>
+                    <span class="feature-btn" id="darkModeBtn" onclick="toggleDark()">🌙 Dark Mode</span>
+                    <span class="feature-btn" onclick="showChart()">📈 Rate History</span>
+                    <span class="feature-btn" onclick="startVoice()">🎤 Voice Input</span>
+                    <span class="feature-btn" onclick="enableNotifications()">🔔 Alerts</span>
+                    <span class="feature-btn" onclick="findNearby()">📍 Nearby Centers</span>
+                </div>
+                <div id="chartContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let deferredPrompt;
+
+        // PWA Install
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installPrompt').style.display = 'block';
+        });
+
+        function installPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((result) => {
+                    deferredPrompt = null;
+                    document.getElementById('installPrompt').style.display = 'none';
+                });
+            }
+        }
+
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            const sw = `
+                self.addEventListener('install', (e) => {
+                    e.waitUntil(caches.open('remitwise-v1').then(cache => {
+                        return cache.addAll(['/']);
+                    }));
+                });
+                self.addEventListener('fetch', (e) => {
+                    e.respondWith(caches.match(e.request).then(response => response || fetch(e.request)));
+                });
+            `;
+            const blob = new Blob([sw], { type: 'application/javascript' });
+            const swUrl = URL.createObjectURL(blob);
+            navigator.serviceWorker.register(swUrl);
+        }
+
+        // Manifest
+        const manifest = {
+            name: 'RemitWise AI',
+            short_name: 'RemitWise',
+            start_url: '/',
+            display: 'standalone',
+            background_color: '#7c3aed',
+            theme_color: '#1e40af',
+            icons: [{
+                src: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%237c3aed" width="100" height="100"/><text y="70" font-size="70" text-anchor="middle" x="50">💰</text></svg>',
+                sizes: '512x512',
+                type: 'image/svg+xml'
+            }]
+        };
+        const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+        const manifestURL = URL.createObjectURL(manifestBlob);
+        document.getElementById('manifest-placeholder').setAttribute('href', manifestURL);
+
+        function showTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+            event.target.classList.add('active');
+            document.getElementById(tab).style.display = 'block';
+        }
+
+        function runAgent() {
+            const result = document.getElementById('agentResult');
+            result.innerHTML = `
+                <div class="demo-output" style="margin-top: 1rem; border-left-color: #7c3aed;">
+                    <strong>⚡ Agentic Execution Log:</strong><br><br>
+                    ✅ [00:00] Fetched rates from 5 providers<br>
+                    ✅ [00:01] Booked Wise transfer: $500 → ₱28,425<br>
+                    ✅ [00:02] Generated BIR Form 1701 (filed)<br>
+                    ✅ [00:03] Invested ₱325 excess in GCash GSave (2.5% APY)<br>
+                    ✅ [00:04] Sent Viber to family: "Padala sent! 💚"<br><br>
+                    <strong style="color: #10b981;">Total savings vs manual: ₱325 + 15 mins ⏱️</strong>
+                </div>
+            `;
+        }
+
+        function share(platform) {
+            const text = 'Check out RemitWise AI - Smart remittance for OFW families! 💰';
+            const url = window.location.href;
+            
+            const urls = {
+                facebook: `https://www.facebook.com/sharer/sharer.php?u=${url}`,
+                twitter: `https://twitter.com/intent/tweet?text=${text}&url=${url}`,
+                whatsapp: `https://wa.me/?text=${text} ${url}`,
+                viber: `viber://forward?text=${text} ${url}`
+            };
+
+            if (navigator.share && platform === 'native') {
+                navigator.share({ title: 'RemitWise AI', text, url });
+            } else {
+                window.open(urls[platform], '_blank', 'width=600,height=400');
+            }
+        }
+
+        // EASY: Calculator
+        document.addEventListener('DOMContentLoaded', () => {
+            const calcInput = document.getElementById('calcAmount');
+            const calcResult = document.getElementById('calcResult');
+            const currencyFrom = document.getElementById('currencyFrom');
+            const currencyTo = document.getElementById('currencyTo');
+            
+            // Exchange rates (USD base)
+            const rates = {
+                USD: { PHP: 56.85 },
+                EUR: { PHP: 61.20 },
+                GBP: { PHP: 71.50 },
+                SGD: { PHP: 42.30 },
+                AUD: { PHP: 37.80 }
+            };
+            
+            function updateCalc() {
+                const amount = parseFloat(calcInput.value) || 0;
+                const from = currencyFrom.value;
+                const to = currencyTo.value;
+                const rate = rates[from]?.[to] || 56.85;
+                
+                const wise = amount * rate;
+                const wu = amount * (rate * 0.988); // 1.2% worse
+                const remithub = amount * (rate * 0.994); // 0.6% worse
+                const savings = wise - wu;
+                const savingsPct = ((savings / wu) * 100).toFixed(2);
+                
+                calcResult.innerHTML = `
+                    <div style="font-size: 1.75rem; font-weight: 800; color: #059669; margin-bottom: 0.5rem;">
+                        ₱${wise.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                    <div style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.75rem;">
+                        via Wise (Best Rate: ${rate.toFixed(2)})
+                    </div>
+                    <div style="border-top: 2px dashed #86efac; padding-top: 0.75rem; font-size: 0.85rem;">
+                        <strong>💰 You save:</strong> ₱${savings.toLocaleString('en-PH', { minimumFractionDigits: 2 })} (${savingsPct}%) vs Western Union<br>
+                        <strong>📊 Comparison:</strong><br>
+                        • Wise: ₱${wise.toLocaleString()} ✅<br>
+                        • RemitHub: ₱${remithub.toLocaleString()}<br>
+                        • Western Union: ₱${wu.toLocaleString()}
+                    </div>
+                `;
+            }
+            
+            calcInput?.addEventListener('input', updateCalc);
+            currencyFrom?.addEventListener('change', updateCalc);
+            currencyTo?.addEventListener('change', updateCalc);
+            calcInput?.addEventListener('focus', function() {
+                this.select();
+            });
+            updateCalc();
+            
+            // EASY: Load Transaction History
+            loadTxHistory();
+        });
+        
+        // EASY: Transaction History
+        function loadTxHistory() {
+            const transactions = [
+                { date: 'Nov 20, 2025', amount: '$500', php: '₱28,425', provider: 'Wise', status: 'completed' },
+                { date: 'Nov 13, 2025', amount: '$1,000', php: '₱56,500', provider: 'RemitHub', status: 'completed' },
+                { date: 'Nov 6, 2025', amount: '$750', php: '₱42,638', provider: 'Wise', status: 'completed' },
+                { date: 'Today', amount: '$500', php: '₱28,100', provider: 'Western Union', status: 'pending' }
+            ];
+            
+            const container = document.getElementById('txHistory');
+            if (!container) return;
+            
+            container.innerHTML = transactions.map(tx => `
+                <div class="tx-item">
+                    <div>
+                        <div style="font-weight: 700; color: #1f2937;">${tx.amount} → ${tx.php}</div>
+                        <div style="color: #6b7280; font-size: 0.75rem;">${tx.date} • ${tx.provider}</div>
+                    </div>
+                    <span class="tx-status ${tx.status}">${tx.status.toUpperCase()}</span>
+                </div>
+            `).join('');
+        }
+        
+        // EASY: Quick Amount Buttons
+        function setAmount(val) {
+            document.getElementById('calcAmount').value = val;
+            document.getElementById('calcAmount').dispatchEvent(new Event('input'));
+        }
+        
+        // EASY: Fee Breakdown Toggle
+        let feesVisible = false;
+        function toggleFees() {
+            feesVisible = !feesVisible;
+            const breakdown = document.getElementById('feeBreakdown');
+            const amount = parseFloat(document.getElementById('calcAmount').value) || 500;
+            
+            if (feesVisible) {
+                const wiseFee = amount * 0.005; // 0.5%
+                const wuFee = amount * 0.02; // 2%
+                const remithubFee = amount * 0.012; // 1.2%
+                
+                breakdown.innerHTML = `
+                    <strong style="color: #92400e;">💳 Transfer Fees Breakdown</strong><br><br>
+                    <div style="display: grid; gap: 0.5rem;">
+                        <div>Wise: ${wiseFee.toFixed(2)} (0.5%) ✅ Lowest</div>
+                        <div>RemitHub: ${remithubFee.toFixed(2)} (1.2%)</div>
+                        <div>Western Union: ${wuFee.toFixed(2)} (2.0%)</div>
+                    </div>
+                    <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 2px dashed #fbbf24; font-weight: 600;">
+                        💡 Save ${(wuFee - wiseFee).toFixed(2)} on fees with Wise!
+                    </div>
+                `;
+                breakdown.style.display = 'block';
+            } else {
+                breakdown.style.display = 'none';
+            }
+        }
+
+        // MEDIUM: Dark Mode Toggle (DISABLED - using in-memory state instead)
+        let darkMode = false; // Changed from localStorage to in-memory
+        function toggleDark() {
+            darkMode = !darkMode;
+            document.body.style.filter = darkMode ? 'invert(1) hue-rotate(180deg)' : 'none';
+            const btn = document.getElementById('darkModeBtn');
+            if (btn) btn.innerHTML = darkMode ? '☀️ Light Mode' : '🌙 Dark Mode';
+        }
+
+        // MEDIUM: Rate History Chart (simulated)
+        const rateHistory = [];
+        for (let i = 30; i >= 0; i--) {
+            rateHistory.push({
+                date: new Date(Date.now() - i * 86400000).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' }),
+                rate: 56.5 + Math.random() * 0.7 - 0.35
+            });
+        }
+
+        // HARD: Voice Input
+        function startVoice() {
+            if (!('webkitSpeechRecognition' in window)) {
+                alert('Voice not supported in this browser');
+                return;
+            }
+            
+            const recognition = new webkitSpeechRecognition();
+            recognition.lang = 'en-PH';
+            recognition.onresult = (e) => {
+                const transcript = e.results[0][0].transcript;
+                const match = transcript.match(/(\d+)\s*(dollar|usd)/i);
+                if (match) {
+                    document.getElementById('calcAmount').value = match[1];
+                    document.getElementById('calcAmount').dispatchEvent(new Event('input'));
+                }
+            };
+            recognition.start();
+        }
+
+        // HARD: Push Notifications
+        function enableNotifications() {
+            if (!('Notification' in window)) return;
+            
+            Notification.requestPermission().then(permission => {
+                if (permission === 'granted') {
+                    new Notification('RemitWise Alert', {
+                        body: 'Peso strengthened! Good time to send remittance.',
+                        icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="70" font-size="70" x="50" text-anchor="middle">💰</text></svg>',
+                        tag: 'rate-alert'
+                    });
+                }
+            });
+        }
+
+        // HARD: Geolocation for local remittance centers
+        function findNearby() {
+            if (!navigator.geolocation) {
+                alert('Geolocation not supported');
+                return;
+            }
+            
+            navigator.geolocation.getCurrentPosition(pos => {
+                const { latitude, longitude } = pos.coords;
+                alert(`Finding remittance centers near ${latitude.toFixed(2)}, ${longitude.toFixed(2)}...\n\nDemo: Would show nearest Western Union, LBC, Palawan Express branches.`);
+            });
+        }
+
+        // MEDIUM: Show Chart
+        function showChart() {
+            const container = document.getElementById('chartContainer');
+            if (container.innerHTML) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            const max = Math.max(...rateHistory.map(d => d.rate));
+            const min = Math.min(...rateHistory.map(d => d.rate));
+            const range = max - min;
+            
+            let svg = '<svg class="chart-line" viewBox="0 0 100 100" preserveAspectRatio="none"><polyline fill="none" stroke="#7c3aed" stroke-width="2" points="';
+            rateHistory.forEach((d, i) => {
+                const x = (i / (rateHistory.length - 1)) * 100;
+                const y = 100 - ((d.rate - min) / range) * 80 - 10;
+                svg += `${x},${y} `;
+            });
+            svg += '"/></svg>';
+            
+            container.innerHTML = `
+                <div class="mini-chart">
+                    <div style="font-size: 0.8rem; font-weight: 600; margin-bottom: 0.5rem;">30-Day Rate Trend</div>
+                    ${svg}
+                    <div style="font-size: 0.7rem; color: #6b7280; margin-top: 0.5rem;">₱${min.toFixed(2)} → ₱${max.toFixed(2)}</div>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
